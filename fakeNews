@@ -1,0 +1,46 @@
+from pyexpat import model
+from sre_parse import Tokenizer
+import torch
+from transformers.file_utils import is_tf_available,is_torch_available, is_torch_tpu_available
+from transformers import BertTokenizerFast,BertForSequenceClassification
+from transformers import Trainer, TrainingArguments
+import numpy as np
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+import re
+from nltk.stem.porter import PorterStemmer
+from collections import Counter
+from sklearn.metrics import accuracy_score
+from transformers import AutoTokenizer,AutoModelForSequenceClassification
+
+model_path = "Model-Oraya"
+model = AutoModelForSequenceClassification.from_pretrained(model_path)
+
+tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+
+def get_prediction(text, convert_to_label=False):
+    # prepare our text into tokenized sequence
+    inputs = tokenizer(text, padding=True, truncation=True, max_length=512,
+return_tensors="pt")
+    # perform inference to our model
+    outputs = model(**inputs)
+    # get output probabilities by doing softmax
+    probs = outputs[0].softmax(1)
+    # executing argmax function to get the candidate label
+    d = {
+        0: "reliable",
+        1: "fake"
+}
+    if convert_to_label:
+        return d[int(probs.argmax())]
+    else:
+        return int(probs.argmax())
+
+real_news = """Tim Tebow Will Attempt Another Comeback, This Time in Baseball -The New York Times",Daniel Victor,"If at first you don’t
+    succeed, try a different sport. Tim Tebow, who was aHeisman quarterback at the University of Florida but was
+    unable to hold an N. F. L. job, is pursuing a career in MajorLeague Baseball. <SNIPPED> """
+
+print((get_prediction(real_news, convert_to_label=True)))
